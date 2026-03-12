@@ -1,0 +1,426 @@
+{
+  "$schema": "renderdoc_perf_export_v2",
+  "confidence_legend": {
+    "exact":      "🟢 绝对准确 - 命令流/资源描述符直接提取，不受回放影响",
+    "relative":   "🟡 相对准确 - 绝对值有偏差，但同次回放内排序/比例可信",
+    "unreliable": "🔴 不可信   - 受回放序列化/缓存/调度严重干扰，需交叉验证"
+  },
+
+  "meta": {
+    "tool": "RenderDoc PerfExporter v2.0",
+    "capture_file": "scene_heavy.rdc",
+    "export_time": "2026-03-12T21:10:00Z",
+
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 4090",
+      "vendor": "NVIDIA",
+      "driver_version": "560.35.03",
+      "api": "Vulkan 1.3",
+      "api_version": "1.3.268",
+      "_confidence": "exact",
+      "_note": "来自 API 设备查询，绝对准确"
+    },
+
+    "resolution": {
+      "width": 2560,
+      "height": 1440,
+      "_confidence": "exact"
+    },
+
+    "frame_stats": {
+      "total_draw_calls":    { "value": 3842,  "confidence": "exact",   "note": "命令流计数" },
+      "total_dispatches":    { "value": 58,    "confidence": "exact",   "note": "命令流计数" },
+      "total_passes":        { "value": 27,    "confidence": "exact",   "note": "RenderPass/标记区间计数" },
+      "total_vertices":      { "value": 4823901, "confidence": "exact", "note": "API 调用参数累加" },
+      "total_triangles":     { "value": 1607967, "confidence": "exact", "note": "API 调用参数推算" },
+      "total_frame_gpu_ms":  { "value": 12.45, "confidence": "unreliable", "note": "回放帧总耗时，受序列化严重影响，通常比真实值偏大 30%-200%" }
+    },
+
+    "threshold_ms": 0.5
+  },
+
+  "summary": {
+    "top_cost_passes": {
+      "_confidence": "relative",
+      "_note": "排序基本可信，百分比可参考，绝对 ms 值不可直接对标真实运行",
+      "data": [
+        { "pass_name": "GBuffer",    "gpu_time_ms": 3.21, "percentage": 25.8 },
+        { "pass_name": "Lighting",   "gpu_time_ms": 2.87, "percentage": 23.1 },
+        { "pass_name": "Shadow CSM", "gpu_time_ms": 2.14, "percentage": 17.2 }
+      ]
+    },
+
+    "cost_distribution": {
+      "_confidence": "relative",
+      "_note": "类别间占比可参考，绝对值偏大",
+      "geometry_ms":       4.12,
+      "pixel_shading_ms":  5.83,
+      "compute_ms":        1.67,
+      "copy_transfer_ms":  0.83
+    },
+
+    "state_changes": {
+      "_confidence": "exact",
+      "_note": "次数绝对准确，但每次切换的性能代价因硬件而异",
+      "pipeline_switches":         142,
+      "render_target_switches":    27,
+      "descriptor_set_updates":    891,
+      "vertex_buffer_rebinds":     312
+    }
+  },
+
+  "passes": [
+    {
+      "pass_index": 0,
+      "pass_name": "GBuffer",
+      "event_id_range": [102, 458],
+
+      "draw_call_count":  { "value": 356,     "confidence": "exact" },
+      "vertex_count":     { "value": 1248900, "confidence": "exact" },
+      "triangle_count":   { "value": 416300,  "confidence": "exact" },
+      "instance_count":   { "value": 356,     "confidence": "exact" },
+
+      "timing": {
+        "gpu_time_ms":        { "value": 3.21,  "confidence": "relative", "note": "同帧内 Pass 间对比可信" },
+        "gpu_time_percentage": { "value": 25.8,  "confidence": "relative", "note": "占比通常比绝对值更有意义" },
+        "is_above_threshold":  true
+      },
+
+      "render_targets": {
+        "_confidence": "exact",
+        "_note": "格式、尺寸、Load/Store Op 全部来自 API 描述符",
+        "color_attachments": [
+          {
+            "name": "GBuffer_Albedo",
+            "format": "R8G8B8A8_SRGB",
+            "width": 2560,
+            "height": 1440,
+            "load_op": "Clear",
+            "store_op": "Store"
+          },
+          {
+            "name": "GBuffer_Normal",
+            "format": "R16G16B16A16_SFLOAT",
+            "width": 2560,
+            "height": 1440,
+            "load_op": "Clear",
+            "store_op": "Store"
+          },
+          {
+            "name": "GBuffer_PBR",
+            "format": "R8G8B8A8_UNORM",
+            "width": 2560,
+            "height": 1440,
+            "load_op": "Clear",
+            "store_op": "Store"
+          }
+        ],
+        "depth_attachment": {
+          "name": "SceneDepth",
+          "format": "D32_SFLOAT_S8_UINT",
+          "width": 2560,
+          "height": 1440,
+          "load_op": "Clear",
+          "store_op": "Store"
+        }
+      },
+
+      "bandwidth_estimate": {
+        "_confidence": "relative",
+        "_note": "理论上限，未考虑缓存命中和压缩，真实带宽通常更低",
+        "rt_write_mb":     { "value": 54.24,  "note": "基于 RT 尺寸×格式×StoreOp 计算" },
+        "rt_read_mb":      { "value": 0.0,    "note": "LoadOp=Clear 不读取" },
+        "texture_read_mb": { "value": 128.5,  "note": "绑定纹理理论最大读取，实际取决于采样覆盖率" },
+        "total_estimated_mb": 182.74
+      },
+
+      "gpu_counters": {
+        "samples_passed":       { "value": 5529600, "confidence": "relative", "note": "遮挡剔除结果在回放时基本一致，但动态遮挡场景可能有差异" },
+        "primitives_generated": { "value": 416300,  "confidence": "exact",    "note": "几何体数量不受回放影响" },
+        "fragment_invocations": { "value": 6892400, "confidence": "relative", "note": "与 samples_passed 同理" },
+        "overdraw_ratio":       { "value": 1.87,    "confidence": "relative", "note": "fragments / pixels, 对比有效" }
+      },
+
+      "pipeline_state": {
+        "_confidence": "exact",
+        "_note": "管线状态是命令流快照，100% 准确",
+        "depth_test_enabled": true,
+        "depth_write_enabled": true,
+        "depth_func": "Less",
+        "blend_enabled": false,
+        "cull_mode": "Back",
+        "polygon_mode": "Fill",
+        "msaa_samples": 1
+      },
+
+      "shaders": {
+        "_confidence_of_binding": "exact",
+        "_confidence_of_instruction_count": "relative",
+        "_note": "绑定关系准确；静态指令数不反映动态分支实际执行路径",
+        "vertex_shader": {
+          "name": "gbuffer.vert",
+          "hash": "a3f8c912",
+          "static_instruction_count": 84
+        },
+        "fragment_shader": {
+          "name": "gbuffer.frag",
+          "hash": "d7e1b045",
+          "static_instruction_count": 236,
+          "texture_sample_count": 4,
+          "branch_count": 3
+        }
+      },
+
+      "viewport": {
+        "_confidence": "exact",
+        "x": 0, "y": 0,
+        "width": 2560, "height": 1440,
+        "min_depth": 0.0, "max_depth": 1.0
+      },
+
+      "draws": [
+        {
+          "event_id":         { "value": 105,      "confidence": "exact" },
+          "name":             { "value": "DrawIndexed(4236)", "confidence": "exact" },
+
+          "vertex_count":     { "value": 4236,     "confidence": "exact" },
+          "index_count":      { "value": 4236,     "confidence": "exact" },
+          "instance_count":   { "value": 1,        "confidence": "exact" },
+          "triangle_count":   { "value": 1412,     "confidence": "exact" },
+
+          "gpu_time_ms":      { "value": 0.032,    "confidence": "relative",
+                                "note": "回放值偏大，但同 Pass 内 Draw 间排序可信" },
+
+          "bound_resources": {
+            "_confidence": "exact",
+            "textures": [
+              { "slot": 0, "name": "Brick_Albedo",    "format": "BC7_SRGB",     "size": "2048x2048", "mips": 12 },
+              { "slot": 1, "name": "Brick_Normal",     "format": "BC5_UNORM",    "size": "2048x2048", "mips": 12 },
+              { "slot": 2, "name": "Brick_ORM",        "format": "BC7_UNORM",    "size": "2048x2048", "mips": 12 }
+            ],
+            "constant_buffers": [
+              { "slot": 0, "name": "PerObject_CB", "size_bytes": 256 },
+              { "slot": 1, "name": "PerFrame_CB",  "size_bytes": 512 }
+            ],
+            "vertex_buffers": [
+              { "slot": 0, "stride_bytes": 32, "format": "float3+float3+float2+float4" }
+            ],
+            "index_buffer": {
+              "format": "R16_UINT",
+              "offset": 0
+            }
+          },
+
+          "pipeline_state_hash":  { "value": "ps_0x3a9f12",  "confidence": "exact",
+                                    "note": "相同 hash 表示管线状态完全一致，无切换开销" },
+
+          "gpu_counters_per_draw": {
+            "samples_passed":        { "value": 12480,  "confidence": "relative" },
+            "primitives_generated":  { "value": 1412,   "confidence": "exact" },
+            "fragment_invocations":  { "value": 15230,  "confidence": "relative" },
+            "cs_invocations":        { "value": 0,      "confidence": "exact" }
+          }
+        }
+      ]
+    },
+
+    {
+      "pass_index": 1,
+      "pass_name": "Shadow CSM Cascade 0",
+      "event_id_range": [460, 612],
+
+      "draw_call_count":  { "value": 152,    "confidence": "exact" },
+      "vertex_count":     { "value": 623400, "confidence": "exact" },
+      "triangle_count":   { "value": 207800, "confidence": "exact" },
+      "instance_count":   { "value": 152,    "confidence": "exact" },
+
+      "timing": {
+        "gpu_time_ms":         { "value": 2.14, "confidence": "relative" },
+        "gpu_time_percentage": { "value": 17.2, "confidence": "relative" }
+      },
+
+      "render_targets": {
+        "_confidence": "exact",
+        "color_attachments": [],
+        "depth_attachment": {
+          "name": "ShadowMap_CSM0",
+          "format": "D16_UNORM",
+          "width": 4096,
+          "height": 4096,
+          "load_op": "Clear",
+          "store_op": "Store"
+        }
+      },
+
+      "pipeline_state": {
+        "_confidence": "exact",
+        "depth_test_enabled": true,
+        "depth_write_enabled": true,
+        "depth_func": "Less",
+        "blend_enabled": false,
+        "cull_mode": "Front",
+        "polygon_mode": "Fill",
+        "color_write_mask": "None",
+        "depth_bias": { "constant": 1.25, "slope": 1.75 }
+      },
+
+      "shaders": {
+        "_confidence_of_binding": "exact",
+        "vertex_shader": {
+          "name": "shadow_depth.vert",
+          "hash": "f1c2d3e4",
+          "static_instruction_count": 22
+        },
+        "fragment_shader": null
+      },
+
+      "draws": ["...同上结构，此处省略..."]
+    },
+
+    {
+      "pass_index": 5,
+      "pass_name": "Lighting (Deferred)",
+      "event_id_range": [720, 724],
+
+      "draw_call_count": { "value": 4,  "confidence": "exact" },
+
+      "timing": {
+        "gpu_time_ms":         { "value": 2.87, "confidence": "relative" },
+        "gpu_time_percentage": { "value": 23.1, "confidence": "relative" },
+        "_warning": "全屏 Pass 的回放耗时偏差通常比几何 Pass 更大"
+      },
+
+      "render_targets": {
+        "_confidence": "exact",
+        "color_attachments": [
+          {
+            "name": "SceneColor_HDR",
+            "format": "R16G16B16A16_SFLOAT",
+            "width": 2560,
+            "height": 1440,
+            "load_op": "Load",
+            "store_op": "Store"
+          }
+        ],
+        "depth_attachment": {
+          "name": "SceneDepth",
+          "format": "D32_SFLOAT_S8_UINT",
+          "load_op": "Load",
+          "store_op": "DontCare"
+        }
+      },
+
+      "shaders": {
+        "_confidence_of_binding": "exact",
+        "fragment_shader": {
+          "name": "deferred_lighting.frag",
+          "hash": "b9a8c7d6",
+          "static_instruction_count": 512,
+          "texture_sample_count": 8,
+          "branch_count": 12,
+          "_note_confidence": "relative - 高分支数意味着静态指令数与实际执行差异更大"
+        }
+      },
+
+      "draws": ["..."]
+    },
+
+    {
+      "pass_index": 12,
+      "pass_name": "SSR (Compute)",
+      "event_id_range": [890, 892],
+
+      "dispatch_count": { "value": 2,  "confidence": "exact" },
+
+      "timing": {
+        "gpu_time_ms":         { "value": 1.42, "confidence": "unreliable",
+                                 "note": "Compute Dispatch 的回放耗时最不可靠 - 缺乏波前占用率上下文" },
+        "gpu_time_percentage": { "value": 11.4, "confidence": "unreliable" }
+      },
+
+      "dispatches": [
+        {
+          "event_id":    { "value": 890, "confidence": "exact" },
+          "group_count": { "value": [160, 90, 1],  "confidence": "exact" },
+          "local_size":  { "value": [16, 16, 1],   "confidence": "exact",
+                           "note": "Shader 中声明的 workgroup size" },
+          "total_threads": { "value": 2304000, "confidence": "exact",
+                             "note": "= 160*90*1 * 16*16*1" },
+
+          "gpu_time_ms": { "value": 0.98, "confidence": "unreliable" },
+
+          "bound_resources": {
+            "_confidence": "exact",
+            "storage_images": [
+              { "slot": 0, "name": "SSR_Output",    "format": "R16G16B16A16_SFLOAT", "access": "WriteOnly" }
+            ],
+            "sampled_images": [
+              { "slot": 0, "name": "SceneColor_HDR", "format": "R16G16B16A16_SFLOAT" },
+              { "slot": 1, "name": "SceneDepth",     "format": "D32_SFLOAT" },
+              { "slot": 2, "name": "GBuffer_Normal",  "format": "R16G16B16A16_SFLOAT" }
+            ]
+          },
+
+          "shader": {
+            "name": "ssr_trace.comp",
+            "hash": "e5f6a7b8",
+            "static_instruction_count": 384,
+            "_confidence": "relative"
+          }
+        }
+      ]
+    }
+  ],
+
+  "resource_inventory": {
+    "_confidence": "exact",
+    "_note": "所有资源的创建参数均为确定性数据",
+    "render_targets": [
+      { "name": "GBuffer_Albedo",  "format": "R8G8B8A8_SRGB",       "size": "2560x1440", "size_bytes": 14745600 },
+      { "name": "GBuffer_Normal",  "format": "R16G16B16A16_SFLOAT", "size": "2560x1440", "size_bytes": 29491200 },
+      { "name": "GBuffer_PBR",    "format": "R8G8B8A8_UNORM",       "size": "2560x1440", "size_bytes": 14745600 },
+      { "name": "SceneDepth",     "format": "D32_SFLOAT_S8_UINT",   "size": "2560x1440", "size_bytes": 18432000 },
+      { "name": "SceneColor_HDR", "format": "R16G16B16A16_SFLOAT",  "size": "2560x1440", "size_bytes": 29491200 },
+      { "name": "ShadowMap_CSM0", "format": "D16_UNORM",            "size": "4096x4096", "size_bytes": 33554432 }
+    ],
+    "total_rt_memory_mb": 134.7
+  },
+
+  "confidence_summary": {
+    "exact_fields": [
+      "draw_call_count", "vertex_count", "triangle_count", "instance_count",
+      "dispatch_count", "group_count", "local_size", "total_threads",
+      "render_target format/size/loadOp/storeOp",
+      "texture format/size/mips", "shader binding/hash",
+      "pipeline_state (depth/blend/cull/...)",
+      "viewport/scissor", "bound_resources",
+      "index/vertex buffer layout", "resource_inventory"
+    ],
+    "relative_fields": [
+      "gpu_time_ms (geometry passes)",
+      "gpu_time_percentage",
+      "samples_passed", "fragment_invocations",
+      "overdraw_ratio",
+      "bandwidth_estimate",
+      "static_instruction_count"
+    ],
+    "unreliable_fields": [
+      "total_frame_gpu_ms (回放总帧时间)",
+      "gpu_time_ms (compute dispatches)",
+      "gpu_time_ms (async compute 转同步回放)",
+      "absolute latency / throughput 推断",
+      "cache hit rate (RenderDoc 无法提供)",
+      "occupancy / wave utilization (RenderDoc 无法提供)",
+      "实际内存带宽 (需硬件计数器)"
+    ],
+    "not_available_in_renderdoc": [
+      "GPU 核心频率",
+      "GPU 温度 / 功耗",
+      "显存带宽利用率",
+      "Warp/Wave 占用率",
+      "L1/L2 缓存命中率",
+      "Shader 执行单元利用率",
+      "跨帧 Pipeline 气泡"
+    ]
+  }
+}
